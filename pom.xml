@@ -46,6 +46,18 @@
         </dependency>
         <dependency>
             <groupId>edu.illinois.cs.cogcomp</groupId>
+            <artifactId>illinois-pos</artifactId>
+            <version>3.0.79</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-log4j12</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>edu.illinois.cs.cogcomp</groupId>
             <artifactId>illinois-xlwikifier-resources</artifactId>
             <version>1.0.1</version>
         </dependency>

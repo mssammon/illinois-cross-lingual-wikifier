@@ -6,19 +6,16 @@ import edu.illinois.cs.cogcomp.lbjava.nlp.WordSplitter;
 import edu.illinois.cs.cogcomp.lbjava.nlp.seg.PlainToTokenParser;
 import edu.illinois.cs.cogcomp.lbjava.nlp.seg.Token;
 import edu.illinois.cs.cogcomp.lbjava.parse.Parser;
-import edu.illinois.cs.cogcomp.pos.lbjava.POSTagger;
 import edu.illinois.cs.cogcomp.core.datastructures.Pair;
 import edu.illinois.cs.cogcomp.core.datastructures.textannotation.Constituent;
 import edu.illinois.cs.cogcomp.core.datastructures.textannotation.CoreferenceView;
 import edu.illinois.cs.cogcomp.core.datastructures.textannotation.TextAnnotation;
 import edu.illinois.cs.cogcomp.annotation.AnnotatorException;
+import edu.illinois.cs.cogcomp.pos.POSConfigurator;
+import edu.illinois.cs.cogcomp.pos.lbjava.POSTagger;
 import edu.illinois.cs.cogcomp.tokenizers.CharacterTokenizer;
 import edu.illinois.cs.cogcomp.tokenizers.MultiLingualTokenizer;
 import edu.illinois.cs.cogcomp.tokenizers.Tokenizer;
-import edu.illinois.cs.cogcomp.pos.POSAnnotator;
-import edu.illinois.cs.cogcomp.pos.POSConfigurator;
-import edu.illinois.cs.cogcomp.chunker.main.ChunkerAnnotator;
-import edu.illinois.cs.cogcomp.chunker.main.ChunkerConfigurator;
 import edu.illinois.cs.cogcomp.xlwikifier.datastructures.Language;
 import edu.illinois.cs.cogcomp.xlwikifier.datastructures.ELMention;
 import org.junit.Test;
@@ -110,7 +107,7 @@ public class TestAnnotatorsTest{
         System.out.println(tagger.getTagValues());
         for (Token word = (Token) parser.next(); word != null; word = (Token) parser.next()) {
           String tag = tagger.discreteValue(word);
-          System.out.println(tag);
+          System.out.println(word + ":" + tag);
         }
  
         //POSAnnotator pos_annotator = new POSAnnotator();
