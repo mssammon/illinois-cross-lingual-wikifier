@@ -36,6 +36,7 @@ public class WikiCandidateGenerator {
     private String lang;
     private Map<String, String> title2id, id2redirect;
     private Map<String, List<WikiCand>> cand_cache = new HashMap<>();
+    private Map<String, List<WikiCand>> enhancements = new HashMap<>();
     private boolean use_cache = false;
     private int top = 10;
     public boolean en_search = true;
@@ -93,8 +94,6 @@ public class WikiCandidateGenerator {
             }
             db_pool.put(lang, db);
         }
-
-
     }
 
     public void closeDB() {
@@ -154,6 +153,29 @@ public class WikiCandidateGenerator {
         return cands;
     }
 
+    public void enhanceKB(String file)
+    {
+      ArrayList<String> enhanceFile = null;
+      try {
+      enhanceFile = 
+        LineIO.read(file);
+      } catch (Exception e) {
+          e.printStackTrace();
+      }
+
+      if(enhanceFile != null){
+        for(String line : enhanceFile){
+          String[] sp = line.split("\t");
+          String s = sp[0].toLowerCase().trim();
+          String t = sp[1].toLowerCase().trim(); 
+          WikiCand wc = new WikiCand(t, 1.0);    
+          wc.enhanced = true;
+          wc.lang = "en";
+          enhancements.put(s,new ArrayList<WikiCand>());        
+          enhancements.get(s).add(wc);
+        }
+      }
+    }
 
     /**
      * surface must be lowercased
@@ -162,8 +184,11 @@ public class WikiCandidateGenerator {
      * @return
      */
     public List<WikiCand> getCandsBySurface(String surface) {
+        if(enhancements.get(surface) != null)
+          return enhancements.get(surface);
 
         List<WikiCand> cands = new ArrayList<>();
+
         NavigableMap<Object[], Float> ctitles = p2t2prob.subMap(new Object[]{surface}, new Object[]{surface, null});
 
         List<Map.Entry<Object[], Float>> sorted_cands = ctitles.entrySet().stream().sorted((x1, x2) -> Float.compare(x2.getValue(), x1.getValue()))
@@ -208,9 +233,10 @@ public class WikiCandidateGenerator {
         else
             tokens = tokenizer.getTextAnnotation(surface).getTokens();
 //            tokens = surface.split("\\s+");
+        System.out.println("Tokens for " + surface + ": " +
+                            tokens);
         int each_word_top = max_cand / tokens.length;
         for (String t : tokens) {
-
             NavigableMap<Object[], Float> ctitles = w2t2prob.subMap(new Object[]{t}, new Object[]{t, null});
 
             List<Map.Entry<Object[], Float>> sorted_cands = ctitles.entrySet().stream().sorted((x1, x2) -> Float.compare(x2.getValue(), x1.getValue()))
@@ -280,34 +306,48 @@ public class WikiCandidateGenerator {
 
         Map<String, List<String>> s2t = new HashMap<>();
         Map<String, List<String>> t2s = new HashMap<>();
-
+        ArrayList<String> wordTitleFile = null;
         try {
-            for (String line : LineIO.read(file)) {
-
-                String[] sp = line.split("\t");
-                if (sp.length < 2) continue;
-                String s = sp[0].toLowerCase().trim();
-                String t = getFinalTitle(sp[1]);
-
-                String[] tokens;
-                if (lang.equals("zh"))
-                    tokens = s.split("·");
-                else
-                    tokens = tokenizer.getTextAnnotation(s).getTokens();
-
-                for (String ss : tokens) {
-                    if (!s2t.containsKey(ss))
-                        s2t.put(ss, new ArrayList<>());
-                    s2t.get(ss).add(t);
-                    if (!t2s.containsKey(t))
-                        t2s.put(t, new ArrayList<>());
-                    t2s.get(t).add(ss);
-                }
-//                }
-            }
+        wordTitleFile = 
+          LineIO.read(file);
         } catch (Exception e) {
             e.printStackTrace();
         }
+
+        if(/*ConfigParameters.enhanceKB*/ true){
+          ArrayList<String> enhancements = null; 
+          try{
+            enhancements =
+              LineIO.read(
+              "/home/cddunca2/cross-lingual-wikifier/enhancements.txt");
+          } catch (Exception e) {
+            e.printStackTrace();
+          }
+          wordTitleFile.addAll(enhancements);
+        }
+
+        for (String line : wordTitleFile) {
+           String[] sp = line.split("\t");
+           if (sp.length < 2) continue;
+           String s = sp[0].toLowerCase().trim();
+           String t = getFinalTitle(sp[1]);
+
+           String[] tokens;
+           if (lang.equals("zh"))
+               tokens = s.split("·");
+           else
+               tokens = tokenizer.getTextAnnotation(s).getTokens();
+
+           for (String ss : tokens) {
+               if (!s2t.containsKey(ss))
+                   s2t.put(ss, new ArrayList<>());
+               s2t.get(ss).add(t);
+               if (!t2s.containsKey(t))
+                   t2s.put(t, new ArrayList<>());
+               t2s.get(t).add(ss);
+           }
+        }
+
         logger.info("s2t size " + s2t.size());
         logger.info("t2s size " + t2s.size());
 
@@ -332,7 +372,9 @@ public class WikiCandidateGenerator {
             cnt++;
             if (cnt % 10000 == 0)
                 System.out.print(cnt * 100.0 / s2t.size() + "\r");
-            Map<String, Long> t2cnt = s2t.get(surface).stream().collect(groupingBy(x -> x, counting()));
+            Map<String, Long> t2cnt = 
+              s2t.get(surface).stream()
+              .collect(groupingBy(x -> x, counting()));
             float sum = 0;
             for (String title : t2cnt.keySet()) {
                 sum += t2cnt.get(title);
@@ -344,7 +386,9 @@ public class WikiCandidateGenerator {
 
         logger.info("Calculating p(word | title)...");
         for (String title : t2s.keySet()) {
-            Map<String, Long> s2cnt = t2s.get(title).stream().collect(groupingBy(x -> x, counting()));
+            Map<String, Long> s2cnt = 
+              t2s.get(title).stream()
+              .collect(groupingBy(x -> x, counting()));
             float sum = 0;
             for (String surface : s2cnt.keySet()) {
                 sum += s2cnt.get(surface);
@@ -434,8 +478,29 @@ public class WikiCandidateGenerator {
         Map<String, List<String>> s2t = new HashMap<>();
         Map<String, List<String>> t2s = new HashMap<>();
 
+        ArrayList<String> wordTitleFile = null;
         try {
-            for (String line : LineIO.read(file)) {
+        wordTitleFile = 
+          LineIO.read(file);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        if(/*ConfigParameters.enhanceKB*/ true){
+          ArrayList<String> enhancements = null; 
+          try{
+            enhancements =
+              LineIO.read(
+              "/home/cddunca2/cross-lingual-wikifier/enhancements.txt");
+          } catch (Exception e) {
+            e.printStackTrace();
+          }
+          wordTitleFile.addAll(enhancements);
+        }
+
+
+        try {
+            for (String line : wordTitleFile) {
 
                 String[] sp = line.split("\t");
 

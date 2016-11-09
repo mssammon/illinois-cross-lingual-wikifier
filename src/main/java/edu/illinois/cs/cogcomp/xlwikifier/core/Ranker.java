@@ -183,9 +183,17 @@ public class Ranker {
         doc.prepareFeatures(fm);
         for (int i = 0; i < doc.mentions.size(); i++) {
             ELMention m = doc.mentions.get(i);
-            m.prepareFeatures(doc, fm, doc.mentions.subList(0, i));
             List<WikiCand> cands = m.getCandidates();
+
+            System.out.println("Printing candidate titles:");
             for (WikiCand cand : cands) {
+                System.out.println(cand.getTitle());
+            }
+
+            m.prepareFeatures(doc, fm, doc.mentions.subList(0, i));
+            for (WikiCand cand : cands) {
+                if(cand.enhanced)
+                  break;
                 double score = getScoreByModel(m, cand, doc);
                 cand.setScore(score);
             }
@@ -195,7 +203,12 @@ public class Ranker {
                 m.setCandidates(cands);
 
                 m.setWikiTitle(cands.get(0).getTitle());
-                m.setMidVec(fm.we.getTitleVector(m.getWikiTitle(), cands.get(0).lang));
+                // TODO: this is a hack
+                try{
+                  m.setMidVec(fm.we.getTitleVector(m.getWikiTitle(), cands.get(0).lang));
+                } catch (Exception e){
+                  m.setMidVec(null);
+                }
             } else {
                 m.setWikiTitle("NIL");
                 m.setMidVec(null);

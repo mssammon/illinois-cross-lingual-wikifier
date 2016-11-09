@@ -59,6 +59,10 @@ public class CrossLingualWikifier extends Annotator {
         doInitialize();
     }
 
+    public void enhanceKB(String file){
+      wcg.enhanceKB(file);
+    }
+    
     @Override
     public void initialize(ResourceManager resourceManager) {
 
@@ -107,7 +111,6 @@ public class CrossLingualWikifier extends Annotator {
         }
 
         for (String title : title2mentions.keySet()) {
-
             // sort mentions in a cluster by the length of surface forms
             List<ELMention> len_sort = title2mentions.get(title).stream()
                     .sorted((x1, x2) -> Integer.compare(x2.getSurface().length(), x1.getSurface().length()))
@@ -143,6 +146,23 @@ public class CrossLingualWikifier extends Annotator {
             m.setType(c.getLabel());
             doc.mentions.add(m);
         }
+
+        System.out.println("SHALLOW_PARSE results: ");
+        for (Constituent c : textAnnotation.getView("SHALLOW_PARSE")) {
+            ELMention m = new ELMention("", c.getStartCharOffset(), c.getEndCharOffset());
+            System.out.println(c.getSurfaceForm());
+            m.setSurface(c.getSurfaceForm());
+            doc.mentions.add(m);
+        }
+        System.out.println("POS results: ");
+        for (Constituent c : textAnnotation.getView("POS")) {
+            ELMention m = new ELMention("", c.getStartCharOffset(), c.getEndCharOffset());
+            System.out.println("Constituent: " + c.getSurfaceForm());
+            System.out.println(textAnnotation.getView("POS").getLabelsCovering(c));
+            m.setSurface(c.getSurfaceForm());
+            doc.mentions.add(m);
+        }
+
         return doc;
     }
 
@@ -156,8 +176,8 @@ public class CrossLingualWikifier extends Annotator {
         ranker.setWikiTitleByModel(doc);
 
         nerutils.setEnWikiTitle(doc);
-
-        nerutils.setMidByWikiTitle(doc);
+        
+        // nerutils.setMidByWikiTitle(doc);
 
         if(ConfigParameters.use_search)
             PostProcessing.wikiSearchSolver(doc,language.toString().toLowerCase());

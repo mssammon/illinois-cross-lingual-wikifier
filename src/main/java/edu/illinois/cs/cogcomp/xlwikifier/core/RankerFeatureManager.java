@@ -120,7 +120,6 @@ public class RankerFeatureManager implements Serializable {
         if (use_foreign_title)
             addCosin(m.context200, title_vec.get(flang), featureMap, "W_CON200_L");
 
-
         addFeatureCombos(featureMap);
         cand.ranker_feats = featureMap;
         FeatureVector fv = lex.convertRawFeaMap2LRFeatures(featureMap);

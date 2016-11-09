@@ -214,9 +214,11 @@ public class Importer {
 
 
     public static void main(String[] args) {
-        ConfigParameters.setPropValues();
-
-        Importer importer = new Importer(args[0], args[1]);
+        ConfigParameters.setPropValues("config/xlwikifier-chase.config");
+        // change the config db path
+        //    en 20160801
+        // Importer importer = new Importer(args[0], args[1]);
+        Importer importer = new Importer("en","20160801");
         try {
 //            importer.downloadDump();
 //            importer.parseWikiDump();
